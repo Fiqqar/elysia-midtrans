@@ -1,9 +1,11 @@
 import admin from "firebase-admin";
 
+const serviceAccount = JSON.parse(
+    process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
+)
+
 admin.initializeApp({
-    credential: admin.credential.cert(
-        await Bun.file("./elysia-midtrans-firebase-adminsdk-fbsvc-7d71769c1b.json").json()
-    )
+    credential: admin.credential.cert(serviceAccount)
 })
 
 export const db = admin.firestore();
