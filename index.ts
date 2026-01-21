@@ -2,6 +2,22 @@ import Elysia from "elysia"
 import cors from "@elysiajs/cors"
 import { snap } from "./midtrans"
 import { db } from "./firebase"
+import crypto from "crypto"
+
+function verifySignature(body: any) {
+    const payload =
+        body.order_id +
+        body.status_code +
+        body.gross_amount +
+        process.env.MIDTRANS_SERVER_KEY
+
+    const hash = crypto
+        .createHash("sha512")
+        .update(payload)
+        .digest("hex")
+
+    return hash === body.signature_key
+}
 
 const app = new Elysia()
     .use(cors())
@@ -42,7 +58,12 @@ const app = new Elysia()
         }
     })
 
-    .post("/midtrans/callback", async ({ body }) => {
+    .post("/midtrans/callback", async ({ body, set }) => {
+        if (!verifySignature(body)) {
+            set.status = 403
+            return "invalid signature"
+        }
+
         const { order_id, transaction_status } = body as {
             order_id: string
             transaction_status: string
@@ -67,6 +88,7 @@ const app = new Elysia()
 
         return "ok"
     })
+
 
     .listen(3000)
 
